@@ -11,9 +11,7 @@ package tree
 		
 		public static function Create( center:Vector3D, halfWidth:Number, maxDepth:int ):OctTreeNode
 		{
-			if ( isNaN( maxDepth ))
-				return null ;
-			if ( maxDepth <= 0 )
+			if ( maxDepth < 0 )
 				return null ;
 			
 			//	Create a node

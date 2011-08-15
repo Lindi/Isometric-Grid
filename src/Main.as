@@ -1,10 +1,10 @@
 package
 {
 	
+	import flash.display.GraphicsPathWinding;
 	import flash.display.Sprite;
 	import flash.display.StageAlign;
 	import flash.display.StageScaleMode;
-	import flash.display.GraphicsPathWinding ;
 	import flash.events.Event;
 	import flash.events.KeyboardEvent;
 	import flash.geom.Matrix;
@@ -14,6 +14,9 @@ package
 	import math.*;
 	
 	import org.flexunit.Assert;
+	
+	import tree.QuadTree;
+	import tree.QuadTreeNode;
 
 	[SWF(width='800',height='800',backgroundColor='#ffffff')]
 	public class Main extends Sprite
@@ -24,7 +27,6 @@ package
 		private var gridSquareSize:int = 40 ;
 		private var grid:Vector.<Vector3D> = new Vector.<Vector3D>(rows * cols, true);
 		
-		//	Todo: Declare these as instance properties
 		private var right:int = 400 ;
 		private var left:int = -400 ;
 		private var top:int = 400 ;
@@ -39,6 +41,8 @@ package
 		private static const SQRT3:Number = Math.sqrt(3);
 		private static const SQRT6:Number = Math.sqrt(6);
 
+		
+		private var quadtree:QuadTreeNode ;
 		
 		public function Main()
 		{
@@ -61,17 +65,23 @@ package
 			stage.scaleMode = StageScaleMode.NO_SCALE ;
 			stage.align = StageAlign.TOP_LEFT ;
 			
+			//	Create the quadtree for collision detection
+			quadtree = QuadTree.Create( grid[ n/2 ], width/2, 5, 5, ( 1 | 5 ));
+			
 			//	Create a list of automatons, and positon them
 			//	in our world
 			automatons = new Array( );
-			for ( i=0 ; i<20; i++ )
+			for ( i=0 ; i<40; i++ )
 			{
 				var automaton:Automaton = new Automaton( ) ;
 				var x:int = Math.max(1, int(Math.random() * rows-1 )) ;
 				var z:int = Math.max(1, int(Math.random() * cols-1 )) ;
-				automaton.position = new Vector3D( x * gridSquareSize - (width/2), 0, z * gridSquareSize- (height/2) ) ;
-				automaton.scale = gridSquareSize ;
+				automaton.position = new Vector3D(( x + .5 ) * gridSquareSize - (width/2), 0, ( z + .5 ) * gridSquareSize- (height/2) ) ;
+				automaton.scale = gridSquareSize /2;
 				automatons.push( automaton ) ;
+				
+				//	Add each automaton to the quadtree
+				quadtree.insert( automaton );
 			}
 			
 			addEventListener( Event.ENTER_FRAME, 
@@ -145,13 +155,6 @@ package
 					graphics.lineTo( d.x, d.y );
 				}
 			}
-			
-//			graphics.lineStyle( 2, 0x00ff00 );
-//			graphics.moveTo( stage.stageWidth/2, 0 );
-//			graphics.lineTo( stage.stageWidth/2, stage.stageHeight );
-//			graphics.moveTo( 0, stage.stageHeight/2 ) ;
-//			graphics.lineTo( stage.stageWidth, stage.stageHeight/2 );
-//			graphics.drawRect(0,0,stage.stageWidth,stage.stageHeight);
 		}
 
 		
@@ -161,13 +164,7 @@ package
 		 * 
 		 */		
 		private function main(  ):void
-		{			
-//			//	Grab a position in the world
-//			var point:Vector3D = grid[ 0] ;
-//			
-//			var viewToWorld:Matrix4x4 = viewToWorldTransform( point ) ;
-//			camera = viewToWorld.transform( new Vector3D( 0, 0, -1 ));
-			
+		{						
 			//	Grab the worldToView matrix
 			var worldToView:Matrix4x4 = worldToViewTransform( camera );
 			var projection:Matrix4x4 = getParallelProjectionMatrix( ) ;
@@ -185,15 +182,22 @@ package
 			draw( points );
 			
 			
+			//	Test each object
+			QuadTree.TestCollisions( quadtree ) ;
 			
 			for ( i = 0; i < automatons.length; i++)
 			{
 				//	Grab a reference to the automaton
 				var automaton:Automaton = automatons[ i ] as Automaton ;
 				
+				//	Remove each automaton 
+				quadtree.remove( automaton );
+				quadtree.insert( automaton );
+
 				//	Move the automatons and constrain their movement to the grid
 				var direction:Vector3D = automaton.direction ;
-				direction.scaleBy( 2 ) ;
+				var velocity:Number = 2;//5 + ( 20 * Number( automaton.colliding )) ;
+				direction.scaleBy( velocity ) ;
 				var position:Vector3D = automaton.position.add( direction );
 				var w:int = ( cols - 1 ) * gridSquareSize / 2;
 				var h:int = ( rows - 1 ) * gridSquareSize / 2;
@@ -210,26 +214,33 @@ package
 					automaton.reverse( );
 					
 				} else {
-					
-					if (( position.x % gridSquareSize ) == 0 && ( position.z % gridSquareSize ) == 0 && int( Math.random() * 10 ) == 1 )
+					//trace(int( position.x % gridSquareSize )); 
+					if (int( position.x % gridSquareSize/2 ) == 10 
+						&& int( position.z % gridSquareSize/2 ) == 10 
+						&& int( Math.random() * 10 ) == 1 )
 					{
-						var random:int = int( Math.random() * 3 );
-						switch ( random )
+						if ( !automaton.colliding )
 						{
-							case 0:
-								automaton.turn("left");
-								break ;
-							case 1:
-								automaton.turn("right");
-								break ;
-							case 2:
-								automaton.reverse( ) ;
-								break ;
+							var random:int = int( Math.random() * 2 );
+							switch ( random )
+							{
+								case 0:
+									automaton.turn("left");
+									break ;
+								case 1:
+									automaton.turn("right");
+									break ;
+								//							case 2:
+								//								automaton.reverse( ) ;
+								//								break ;
+							}
+							
 						}
 					}
 					automaton.position = position ;
 				}
 				
+
 				//	Draw the automatons
 				var localToWorld:Matrix4x4 = automaton.localToWorldTransform();
 				var vertices:Vector.<Vector3D> = automaton.vertices ;
@@ -259,9 +270,9 @@ package
 				commands[ i] = 2;//( i % 2 ) + 1 ;
 			
 			var a:Vector3D = vertices[ 0 ] ;	
-			var b:Vector3D = vertices[ 1 ] ;
-			var c:Vector3D = vertices[ 2 ] ;
-			var d:Vector3D = vertices[ 3 ] ;
+			var b:Vector3D = vertices[ 2 ] ;
+			var c:Vector3D = vertices[ 3 ] ;
+			var d:Vector3D = vertices[ 1 ] ;
 			var coordinates:Vector.<Number> = new Vector.<Number>(10,true);
 			
 			i = 0 ;
@@ -271,19 +282,10 @@ package
 				coordinates[ i++ ] = vector.y ;
 			}
 				
-				
-			//graphics.beginFill( 0xff0000 );
-			graphics.drawPath( commands, coordinates, GraphicsPathWinding.EVEN_ODD );
+			graphics.beginFill( 0xaaaaaa, .35 );	
+			graphics.drawPath( commands, coordinates, GraphicsPathWinding.NON_ZERO );
+			graphics.endFill();
 			
-//			graphics.moveTo( a.x, a.y );
-//			graphics.lineTo( b.x, b.y );
-//			graphics.moveTo( a.x, a.y );
-//			graphics.lineTo( c.x, c.y );
-//			graphics.moveTo( b.x, b.y );
-//			graphics.lineTo( d.x, d.y );
-//			graphics.moveTo( c.x, c.y );
-//			graphics.lineTo( d.x, d.y );
-			//graphics.endFill();
 		}
 		
 		/**

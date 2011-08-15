@@ -13,16 +13,17 @@ package
 		private var _up:Vector3D = new Vector3D( 0, 1, 0, 1 ) ;
 		private var _down:Vector3D ;
 		private var _position:Vector3D = new Vector3D( ) ;
+		private var _colliding:Boolean = false ;
 		private var _scale:Number ;
 		
 		public function Automaton()
 		{
 			//	The automaton's local vertices
 			_vertices = new Vector.<Vector3D>(4);
-			_vertices[0] = new Vector3D( 0, 0, 0, 1 ) ;
-			_vertices[1] = new Vector3D( 1, 0, 0, 1 ) ;
+			_vertices[0] = new Vector3D( 1, 0, 0, 1 ) ;
+			_vertices[1] = new Vector3D( -1, 0, 0, 1 ) ;
 			_vertices[2] = new Vector3D( 1, 1, 0, 1 ) ;
-			_vertices[3] = new Vector3D( 0, 1, 0, 1 ) ;
+			_vertices[3] = new Vector3D( -1, 1, 0, 1 ) ;
 			
 			//	Negate the up vector
 			_down = _up.clone();
@@ -30,6 +31,16 @@ package
 		}
 		
 		
+		public function get colliding(  ):Boolean
+		{
+			return _colliding ;
+		}
+
+		public function set colliding( colliding:Boolean ):void
+		{
+			_colliding = colliding ;
+		}
+
 		public function set position( position:Vector3D ):void
 		{
 			_position = position ;
@@ -42,7 +53,12 @@ package
 		
 		public function get radius():Number
 		{
-			return _scale ;
+			return _scale/2 ;
+		}
+
+		public function set direction( direction:Vector3D ):void
+		{
+			_direction = direction ;
 		}
 		
 		public function get direction():Vector3D
@@ -58,8 +74,9 @@ package
 		public function reverse( ):void
 		{
 			_direction.negate();
-			_side.negate();
+			//_side.negate();
 		}
+		
 		
 		public function get vertices( ):Vector.<Vector3D>
 		{
@@ -114,21 +131,21 @@ package
 			//	We align the direction vector with the world x-axis
 			//	by modifying the first column (x-axis) of the matrix 
 			matrix.data[0] = _side.x * _scale ;
-			matrix.data[1] = _side.y * _scale ;
+			matrix.data[1] = _side.y * _scale * 2 ;
 			matrix.data[2] = _side.z * _scale ;
 			matrix.data[3] = 0 ;
 			
 			//	We align the up vector with the world y-axis
 			//	by modifying the second column (y-axis) of the matrix 
 			matrix.data[4] = _up.x * _scale ;
-			matrix.data[5] = _up.y * _scale ;
+			matrix.data[5] = _up.y * _scale * 2 ;
 			matrix.data[6] = _up.z * _scale ;
 			matrix.data[7] = 0 ;
 			
 			//	We align the side vector with the world x-axis
 			//	by modifying the third column (z-axis) of the matrix 
 			matrix.data[8] = _direction.x * _scale ;
-			matrix.data[9] = _direction.y * _scale ;
+			matrix.data[9] = _direction.y * _scale * 2 ;
 			matrix.data[10] = _direction.z * _scale ;
 			matrix.data[11] = 0 ;
 			

@@ -5,7 +5,7 @@ package
 	import org.flexunit.internals.TraceListener;
 	import org.flexunit.runner.FlexUnitCore;
 	import tests.matrix.Suite ;
-	import tests.octtree.Suite ;
+	import tests.tree.Suite ;
 	
 	
 	public class Test extends Sprite
@@ -18,7 +18,7 @@ package
 			core = new FlexUnitCore();
 			listener = new TraceListener();
 			core.addListener( listener );
-			core.run( tests.octtree.Suite );
+			core.run( tests.tree.Suite );
 			core.run( tests.matrix.Suite );
 		}
 	}
