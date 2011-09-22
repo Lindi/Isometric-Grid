@@ -15,6 +15,7 @@ package
 		private var _position:Vector3D = new Vector3D( ) ;
 		private var _colliding:Boolean = false ;
 		private var _scale:Number ;
+		private var _color:Number ;
 		
 		public function Automaton()
 		{
@@ -69,6 +70,16 @@ package
 		public function set scale( scale:Number ):void
 		{
 			_scale = scale ;
+		}
+		
+		public function get color():Number
+		{
+			return _color ;
+		}
+		
+		public function set color( color:Number ):void
+		{
+			_color = color ;
 		}
 		
 		public function reverse( ):void

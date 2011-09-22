@@ -152,10 +152,6 @@ package
 				//	Up Arrow
 				case 38:
 					camera.z += 20 ;
-					//					left *= .95 ;
-					//					right *= .95 ;
-					//					top *= .95 ;
-					//					bottom *= .95 ;
 					break ;
 				
 				//	Right Arrow
@@ -166,14 +162,8 @@ package
 				//	Down Arrow
 				case 40:
 					camera.z -= 20 ;
-					//					left *= 1.05 ;
-					//					right *= 1.05 ;
-					//					top *= 1.05 ;
-					//					bottom *= 1.05 ;
 					break ;
 			}
-			//main(  ) ;
-			
 		}
 		
 		private function draw( grid:Vector.<Vector3D>, row:int = 0, col:int = 0 ):void 
@@ -182,7 +172,7 @@ package
 				grid = this.grid ;
 			
 			graphics.clear();
-			graphics.lineStyle(.5,0xaaaaaa);
+			graphics.lineStyle(.35,0xaaaaaa);
 			var n:int = ( rows * cols ) ;
 			for ( var i:int = row; i < rows-1; i++ )
 			{
@@ -247,8 +237,8 @@ package
 				var position:Vector3D = automaton.position.add( direction );
 				
 				//	Determine whether or not the collision is in-bounds
-				var w:int = ( cols - 1 ) * gridSquareSize / 2;
-				var h:int = ( rows - 1 ) * gridSquareSize / 2;
+				w = ( cols - 2 ) * gridSquareSize / 2;
+				var h:Number = ( rows - 2 ) * gridSquareSize / 2;
 				var outOfBounds:Boolean = position.x < -w ;
 				outOfBounds ||= position.x > w ;
 				outOfBounds ||= position.z < -w ;
@@ -269,7 +259,7 @@ package
 					{
 						if ( !automaton.colliding )
 						{
-							var random:int = int( Math.random() * 2 );
+							var random:int = int( Math.random() * 3 );
 							switch ( random )
 							{
 								case 0:
@@ -277,6 +267,9 @@ package
 									break ;
 								case 1:
 									automaton.turn("right");
+									break ;
+								case 2:
+									automaton.reverse();
 									break ;
 							}
 						}
@@ -331,9 +324,16 @@ package
 						q.position.x += ( q.direction.x * dx/2 );
 						q.position.y += ( q.direction.y * dy/2 );
 					}
+					
+					updateAABB( a, p.position );
+					updateAABB( b, q.position );
 				}
+				
 			}
 			
+			var w:int = gridSquareSize / 2 ;
+
+			//	Transform the automaton's vertices
 			for ( i = 0; i < automatons.length; i++ )
 			{
 				//	Grab a reference to the automaton
@@ -343,7 +343,16 @@ package
 				var localToWorld:Matrix4x4 = automaton.localToWorldTransform();
 				var vertices:Vector.<Vector3D> = automaton.vertices ;
 				
+				//	Average z
 				var avgz:Number = 0 ;
+				
+				//	Render the box being used for collision detection
+				//	So we can see what's going on
+				var footprint:Vector.<Vector3D> = new Vector.<Vector3D>( 4 ) ;
+				footprint[0] = new Vector3D( 1, 0, 1, 1 ) ;
+				footprint[1] = new Vector3D( -1, 0, 1, 1 ) ;
+				footprint[2] = new Vector3D( -1, 0, -1, 1 ) ;
+				footprint[3] = new Vector3D( 1, 0, -1, 1 ) ;
 				for ( var j:int = 0; j < vertices.length; j++ )
 				{
 					vertices[ j ] = localToWorld.transform( vertices[ j]);
@@ -351,10 +360,15 @@ package
 					avgz += vertices[ j ].z ;
 					vertices[ j ] = projection.transform( vertices[ j] );
 					vertices[ j ] = screenTransform.transform( vertices[ j] ) ;
+					
+					footprint[ j] = localToWorld.transform( footprint[ j]);
+					footprint[ j] = worldToView.transform( footprint[ j] ) ;
+					footprint[ j] = projection.transform( footprint[ j] );
+					footprint[ j] = screenTransform.transform( footprint[ j] ) ;
 				}
 				
 				avgz /= vertices.length ;
-				sort.push( { automaton: automaton, z: avgz, vertices: vertices } );
+				sort.push( { automaton: automaton, z: avgz, vertices: vertices, footprint: footprint } );
 				
 			}
 
@@ -364,10 +378,10 @@ package
 			for each ( var object:Object in sort )
 			{
 				vertices = object.vertices as Vector.<Vector3D> ;
+				footprint = object.footprint as Vector.<Vector3D> ;
 				automaton = object.automaton as Automaton ;
-				drawAutomaton( vertices, automaton.color  ) ;
+				drawAutomaton( vertices, footprint, automaton.color  ) ;
 			}
-			
 		}
 		
 		
@@ -382,7 +396,7 @@ package
 		
 		
 		
-		private function drawAutomaton( vertices:Vector.<Vector3D>, color:Number ):void
+		private function drawAutomaton( vertices:Vector.<Vector3D>, footprint:Vector.<Vector3D>, color:Number ):void
 		{
 			graphics.lineStyle(.5);
 			
@@ -390,7 +404,7 @@ package
 			commands[0] = 1 ;
 			
 			for ( var i:int = 1; i < 5; i++ )
-				commands[ i] = 2;//( i % 2 ) + 1 ;
+				commands[ i] = 2;
 			
 			var a:Vector3D = vertices[ 0 ] ;	
 			var b:Vector3D = vertices[ 2 ] ;
@@ -409,6 +423,21 @@ package
 			graphics.drawPath( commands, coordinates, GraphicsPathWinding.NON_ZERO );
 			graphics.endFill();
 			
+			a = footprint[ 0 ] ;	
+			b = footprint[ 1 ] ;
+			c = footprint[ 2 ] ;
+			d = footprint[ 3 ] ;
+			
+			i = 0 ;
+			for each ( vector in [a,b,c,d,a] )
+			{
+				coordinates[ i++ ] = vector.x ;
+				coordinates[ i++ ] = vector.y ;
+			}
+			graphics.lineStyle( 1, color, .35 );
+			graphics.beginFill( color, .25 );	
+			graphics.drawPath( commands, coordinates, GraphicsPathWinding.NON_ZERO );
+			graphics.endFill();
 		}
 		
 		/**

@@ -71,7 +71,7 @@ package
 			//	Create a list of automatons, and positon them
 			//	in our world
 			automatons = new Array( );
-			for ( i=0 ; i<40; i++ )
+			for ( i=0 ; i<20; i++ )
 			{
 				var automaton:Automaton = new Automaton( ) ;
 				var x:int = Math.max(1, int(Math.random() * rows-1 )) ;
@@ -79,6 +79,21 @@ package
 				automaton.position = new Vector3D(( x + .5 ) * gridSquareSize - (width/2), 0, ( z + .5 ) * gridSquareSize- (height/2) ) ;
 				automaton.scale = gridSquareSize /2;
 				automatons.push( automaton ) ;
+				switch (i % 4)
+				{
+					case 0:
+						automaton.color = 0xff0000 ;
+						break ;
+					case 1:
+						automaton.color = 0x00ff00 ;
+						break ;
+					case 2:
+						automaton.color = 0x0000ff ;
+						break ;
+					case 3:
+						automaton.color = 0xffff00 ;
+						break ;
+				}
 				
 				//	Add each automaton to the quadtree
 				quadtree.insert( automaton );
@@ -185,6 +200,9 @@ package
 			//	Test each object
 			QuadTree.TestCollisions( quadtree ) ;
 			
+			//	Create a list for z-sorting
+			var sort:Array = new Array();
+			
 			for ( i = 0; i < automatons.length; i++)
 			{
 				//	Grab a reference to the automaton
@@ -244,22 +262,47 @@ package
 				//	Draw the automatons
 				var localToWorld:Matrix4x4 = automaton.localToWorldTransform();
 				var vertices:Vector.<Vector3D> = automaton.vertices ;
+				//var viewPosition:Vector3D = worldToView.transform(automaton.position);
+				var avgz:Number = 0 ;
 				for ( var j:int = 0; j < vertices.length; j++ )
 				{
 					vertices[ j ] = localToWorld.transform( vertices[ j]);
 					vertices[ j ] = worldToView.transform( vertices[ j] ) ;
+					avgz += vertices[ j ].z ;
 					vertices[ j ] = projection.transform( vertices[ j] );
 					vertices[ j ] = screenTransform.transform( vertices[ j] ) ;
 				}
 				
-				drawAutomaton( vertices ) ;
+				avgz /= vertices.length ;
+				
+				sort.push( { automaton: automaton, z: avgz, vertices: vertices } );
+				
 			}
+			
+			sort.sort(foo);
+			
+			for each ( var object:Object in sort )
+			{
+				vertices = object.vertices as Vector.<Vector3D> ;
+				automaton = object.automaton as Automaton ;
+				drawAutomaton( vertices, automaton.color  ) ;
+			}
+			
 		}
 		
 		
+		private function foo( a:Object, b:Object ):int
+		{
+			if ( a.z > b.z )
+				return -1 ;
+			if ( a.z < b.z )
+				return 1 ;
+			return 0 ;
+		}
+		
 
 		
-		private function drawAutomaton( vertices:Vector.<Vector3D> ):void
+		private function drawAutomaton( vertices:Vector.<Vector3D>, color:Number ):void
 		{
 			graphics.lineStyle(.5);
 			
@@ -282,7 +325,7 @@ package
 				coordinates[ i++ ] = vector.y ;
 			}
 				
-			graphics.beginFill( 0xaaaaaa, .35 );	
+			graphics.beginFill( color, .9 );	
 			graphics.drawPath( commands, coordinates, GraphicsPathWinding.NON_ZERO );
 			graphics.endFill();
 			

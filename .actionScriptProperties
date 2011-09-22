@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<actionScriptProperties analytics="false" mainApplicationPath="Main.as" projectUUID="3fde84c6-02c2-443e-88f3-e72eec63f5e9" version="6">
+<actionScriptProperties analytics="false" mainApplicationPath="SweepLine.as" projectUUID="3fde84c6-02c2-443e-88f3-e72eec63f5e9" version="6">
   <compiler additionalCompilerArguments="-locale en_US" autoRSLOrdering="true" copyDependentFiles="true" fteInMXComponents="false" generateAccessible="true" htmlExpressInstall="true" htmlGenerate="true" htmlHistoryManagement="true" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderPath="bin-debug" sourceFolderPath="src" strict="true" targetPlayerVersion="0.0.0" useApolloConfig="false" useDebugRSLSwfs="true" verifyDigests="true" warn="true">
-    <compilerSourcePath/>
+    <compilerSourcePath>
+      <compilerSourcePathEntry kind="1" linkType="1" path="${DOCUMENTS}/Collision-Detection/src"/>
+    </compilerSourcePath>
     <libraryPath defaultLinkType="0">
       <libraryPathEntry kind="4" path="">
         <excludedEntries>
@@ -30,6 +32,7 @@
     <sourceAttachmentPath/>
   </compiler>
   <applications>
+    <application path="SweepLine.as"/>
     <application path="Test.as"/>
     <application path="Main.as"/>
   </applications>
