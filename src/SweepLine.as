@@ -14,33 +14,30 @@ package
 	import flash.geom.Vector3D;
 	
 	import geometry.AABB;
-	
 	import math.*;
-	
-	import org.flexunit.Assert;
-	
 	import util.Iterator;
 	
 	
-	[SWF(width='800',height='800',backgroundColor='#ffffff')]
+	[SWF(width='600',height='600',backgroundColor='#ffffff')]
 	public class SweepLine extends Sprite
 	{
 		
 		private var rows:int = 20 ;
 		private var cols:int = 20 ;
-		private var gridSquareSize:int = 40 ;
+		private var gridSquareSize:int = 20 ;
 		private var grid:Vector.<Vector3D> = new Vector.<Vector3D>(rows * cols, true);
 		
-		private var right:int = 400 ;
-		private var left:int = -400 ;
-		private var top:int = 400 ;
-		private var bottom:int = -400 ;
-		private var nearZ:int = 200 ;
-		private var farZ:int = 400 ;
+		private var right:int = 200 ;
+		private var left:int = -200 ;
+		private var top:int = 200 ;
+		private var bottom:int = -200 ;
+		private var nearZ:int = 40 ;
+		private var farZ:int = 80 ;
 		
 		private var camera:Vector3D = new Vector3D(0, 0, 0) ;
 		
 		private var automatons:Array ;
+		private var intersection:AABB = new AABB();
 		
 		private static const SQRT3:Number = Math.sqrt(3);
 		private static const SQRT6:Number = Math.sqrt(6);
@@ -69,13 +66,10 @@ package
 			//	Don't scale the stage
 			stage.scaleMode = StageScaleMode.NO_SCALE ;
 			stage.align = StageAlign.TOP_LEFT ;
-			
-			//	Create the quadtree for collision detection
-			//quadtree = QuadTree.Create( grid[ n/2 ], width/2, 5, 5, ( 1 | 5 ));
-			
+						
 			//	Create a list of automatons, and positon them
 			//	in our world
-			n = 40 ;
+			n = 30 + int( Math.random() * 30 ) ;
 			automatons = new Array(  );
 			
 			//	Create our new list of axis-aligned bounding boxes that we're going to use for
@@ -86,11 +80,15 @@ package
 			for ( i=0 ; i < n; i++ )
 			{
 				var automaton:Automaton = new Automaton( ) ;
-				var x:int = Math.max(1, int(Math.random() * rows-1 )) ;
-				var z:int = Math.max(1, int(Math.random() * cols-1 )) ;
+				var x:int = ( i % 9 ) * 2 + 1;
+				var z:int = ( i / 4 ) + 1;
 				automaton.position = new Vector3D(( x + .5 ) * gridSquareSize - (width/2), 0, ( z + .5 ) * gridSquareSize- (height/2) ) ;
 				automaton.scale = gridSquareSize /2;
 				automatons.push( automaton ) ;
+				
+				if ( int( Math.random() * 3 ) == 1 )
+					automaton.turn("right");
+				
 				switch (i % 4)
 				{
 					case 0:
@@ -230,7 +228,7 @@ package
 								
 				//	Move the automatons and constrain their movement to the grid
 				var direction:Vector3D = automaton.direction ;
-				var velocity:Number = 2;//5 + ( 20 * Number( automaton.colliding )) ;
+				var velocity:Number = ( i % 3 ) + 2 ;
 				direction.scaleBy( velocity ) ;
 				
 				//	Create a position vector
@@ -253,13 +251,14 @@ package
 					
 				} else {
 					
-					if ( int( position.x % gridSquareSize/2 ) == 10 
-						&& int( position.z % gridSquareSize/2 ) == 10 
-						&& int( Math.random() * 3 ) == 1 )
+					if (( int( position.x % gridSquareSize/2 ) == 5 
+						&& int( position.z % gridSquareSize/2 ) == 5 )
+						|| ( int( position.x % gridSquareSize ) == 10 
+							&& int( position.z % gridSquareSize ) == 10 ))
 					{
 						if ( !automaton.colliding )
 						{
-							var random:int = int( Math.random() * 3 );
+							var random:int = int( Math.random() * 2 );
 							switch ( random )
 							{
 								case 0:
@@ -267,9 +266,6 @@ package
 									break ;
 								case 1:
 									automaton.turn("right");
-									break ;
-								case 2:
-									automaton.reverse();
 									break ;
 							}
 						}
@@ -290,7 +286,6 @@ package
 			
 			//	Now the set of intersections should be updated
 			var iterator:Iterator = _intersectingAABB.intersections ;
-			var intersection:AABB = new AABB ;
 			while ( iterator.hasNext())
 			{
 				var array:Array = ( iterator.next() as Array ) ;
@@ -298,6 +293,10 @@ package
 				j = array[1] as int ;
 				var a:AABB = _aabb[ i] ;
 				var b:AABB = _aabb[ j] ;
+				intersection.xmin =
+					intersection.xmax =
+					intersection.ymin =
+					intersection.ymax = 0 ;
 				
 				if ( a.findIntersection( b, intersection ))
 				{
@@ -312,17 +311,29 @@ package
 					{
 						var dx:Number = Math.abs( intersection.xmax - intersection.xmin ) ;
 						var dy:Number = Math.abs( intersection.ymax - intersection.ymin ) ;
+						
 						p.reverse();
 						p.position.x += ( p.direction.x * dx/2 );
 						p.position.y += ( p.direction.y * dy/2 );
+						
+					} else if ( p.position.x >= q.position.x ) {
+						
+						p.position.x += p.direction.x * ( intersection.xmax - intersection.xmin ) ;
+						p.position.y += p.direction.y * ( intersection.ymax - intersection.ymin ) ;
 					}
 					v = p.position.subtract( q.position );
 					dotProduct = q.direction.dotProduct( v ) ;
+					
 					if ( dotProduct >= 0 )
 					{
 						q.reverse();
 						q.position.x += ( q.direction.x * dx/2 );
 						q.position.y += ( q.direction.y * dy/2 );
+						
+					} else if ( q.position.x >= q.position.x ) {
+						
+						q.position.x += q.direction.x * ( intersection.xmax - intersection.xmin ) ;
+						q.position.y += q.direction.y * ( intersection.ymax - intersection.ymin ) ;
 					}
 					
 					updateAABB( a, p.position );
@@ -398,38 +409,21 @@ package
 		
 		private function drawAutomaton( vertices:Vector.<Vector3D>, footprint:Vector.<Vector3D>, color:Number ):void
 		{
-			graphics.lineStyle(.5);
 			
 			var commands:Vector.<int> = new Vector.<int>(5,true);
 			commands[0] = 1 ;
 			
+			var coordinates:Vector.<Number> = new Vector.<Number>(10,true);
 			for ( var i:int = 1; i < 5; i++ )
 				commands[ i] = 2;
 			
-			var a:Vector3D = vertices[ 0 ] ;	
-			var b:Vector3D = vertices[ 2 ] ;
-			var c:Vector3D = vertices[ 3 ] ;
-			var d:Vector3D = vertices[ 1 ] ;
-			var coordinates:Vector.<Number> = new Vector.<Number>(10,true);
+			var a:Vector3D = footprint[ 0 ] ;	
+			var b:Vector3D = footprint[ 1 ] ;
+			var c:Vector3D = footprint[ 2 ] ;
+			var d:Vector3D = footprint[ 3 ] ;
 			
 			i = 0 ;
 			for each ( var vector:Vector3D in [a,b,c,d,a] )
-			{
-				coordinates[ i++ ] = vector.x ;
-				coordinates[ i++ ] = vector.y ;
-			}
-			
-			graphics.beginFill( color, .9 );	
-			graphics.drawPath( commands, coordinates, GraphicsPathWinding.NON_ZERO );
-			graphics.endFill();
-			
-			a = footprint[ 0 ] ;	
-			b = footprint[ 1 ] ;
-			c = footprint[ 2 ] ;
-			d = footprint[ 3 ] ;
-			
-			i = 0 ;
-			for each ( vector in [a,b,c,d,a] )
 			{
 				coordinates[ i++ ] = vector.x ;
 				coordinates[ i++ ] = vector.y ;
@@ -438,6 +432,25 @@ package
 			graphics.beginFill( color, .25 );	
 			graphics.drawPath( commands, coordinates, GraphicsPathWinding.NON_ZERO );
 			graphics.endFill();
+ 
+			a = vertices[ 0 ] ;	
+			b = vertices[ 2 ] ;
+			c = vertices[ 3 ] ;
+			d = vertices[ 1 ] ;
+			
+			
+			i = 0 ;
+			for each ( vector in [a,b,c,d,a] )
+			{
+				coordinates[ i++ ] = vector.x ;
+				coordinates[ i++ ] = vector.y ;
+			}
+			
+			graphics.lineStyle(.5);
+			graphics.beginFill( color, .9 );	
+			graphics.drawPath( commands, coordinates, GraphicsPathWinding.NON_ZERO );
+			graphics.endFill();
+			
 		}
 		
 		/**
