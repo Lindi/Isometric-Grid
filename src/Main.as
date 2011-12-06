@@ -40,6 +40,7 @@ package
 		
 		private static const SQRT3:Number = Math.sqrt(3);
 		private static const SQRT6:Number = Math.sqrt(6);
+		private static const SQRT2:Number = Math.sqrt(2);
 
 		
 		private var quadtree:QuadTreeNode ;
@@ -214,7 +215,7 @@ package
 
 				//	Move the automatons and constrain their movement to the grid
 				var direction:Vector3D = automaton.direction ;
-				var velocity:Number = 2;//5 + ( 20 * Number( automaton.colliding )) ;
+				var velocity:Number = 2;
 				direction.scaleBy( velocity ) ;
 				var position:Vector3D = automaton.position.add( direction );
 				var w:int = ( cols - 1 ) * gridSquareSize / 2;
@@ -248,11 +249,7 @@ package
 								case 1:
 									automaton.turn("right");
 									break ;
-								//							case 2:
-								//								automaton.reverse( ) ;
-								//								break ;
 							}
-							
 						}
 					}
 					automaton.position = position ;
@@ -408,7 +405,7 @@ package
 			var matrix:Matrix4x4 = new Matrix4x4( ) ;
 			matrix.data[0] = stage.stageWidth/2 ;
 			matrix.data[12] = stage.stageWidth/2 ;			
-			matrix.data[5] = -stage.stageHeight/2 + (nearZ * (1/SQRT3)) ;
+			matrix.data[5] = -stage.stageHeight/2 + (nearZ * (1/SQRT2)) ;
 			matrix.data[13] = stage.stageHeight/2 ;
 			matrix.data[10] = .5;
 			matrix.data[14] = .5;

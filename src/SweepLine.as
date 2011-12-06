@@ -41,6 +41,7 @@ package
 		
 		private static const SQRT3:Number = Math.sqrt(3);
 		private static const SQRT6:Number = Math.sqrt(6);
+		private static const SQRT2:Number = Math.sqrt(2);
 		
 		
 		private var _aabb:Vector.<AABB> ;
@@ -530,7 +531,7 @@ package
 			var matrix:Matrix4x4 = new Matrix4x4( ) ;
 			matrix.data[0] = stage.stageWidth/2 ;
 			matrix.data[12] = stage.stageWidth/2 ;			
-			matrix.data[5] = -stage.stageHeight/2 + (nearZ * (1/SQRT3)) ;
+			matrix.data[5] = -stage.stageHeight/2 + (nearZ * (1/SQRT2)) ;
 			matrix.data[13] = stage.stageHeight/2 ;
 			matrix.data[10] = .5;
 			matrix.data[14] = .5;
